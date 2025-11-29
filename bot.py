@@ -141,7 +141,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 row.append(InlineKeyboardButton("𝗝𝗢𝗜𝗡", url=f"https://t.me/{REQUIRED_CHANNELS[i+1]}"))
             btns.append(row)
         
-        btns.append([InlineKeyboardButton("🚀 VERIFY JOINED", callback_data="𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘄 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱 ✅! 𝗪𝗲𝗹𝗰𝗼𝗺𝗲 𝗧𝗼 𝗞𝗮𝗮𝗹 𝗕𝗼𝗺𝗯𝗲𝗿.𝗣𝗿𝗲𝘀𝘀 /start 𝗧𝗼 𝗦𝘁𝗮𝗿𝘁")])
+        btns.append([InlineKeyboardButton("🚀 VERIFY JOINED", callback_data="verify")])
         
         await update.message.reply_text(
             "🛑 𝗣𝗹𝗲𝗮𝘀𝗲 𝗝𝗼𝗶𝗻 𝗔𝗹𝗹 𝗥𝗲𝗾𝘂𝗶𝗿𝗲𝗱 𝗖𝗵𝗮𝗻𝗻𝗲𝗹𝘀 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 ⚠️",
