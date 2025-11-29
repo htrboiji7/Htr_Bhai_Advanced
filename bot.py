@@ -136,12 +136,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         btns = []
         for i in range(0, len(REQUIRED_CHANNELS), 2):
             row = []
-            row.append(InlineKeyboardButton("JOIN", url=f"https://t.me/{REQUIRED_CHANNELS[i]}"))
+            row.append(InlineKeyboardButton("𝗝𝗢𝗜𝗡", url=f"https://t.me/{REQUIRED_CHANNELS[i]}"))
             if i + 1 < len(REQUIRED_CHANNELS):
-                row.append(InlineKeyboardButton("JOIN", url=f"https://t.me/{REQUIRED_CHANNELS[i+1]}"))
+                row.append(InlineKeyboardButton("𝗝𝗢𝗜𝗡", url=f"https://t.me/{REQUIRED_CHANNELS[i+1]}"))
             btns.append(row)
         
-        btns.append([InlineKeyboardButton("✅ VERIFY JOINED", callback_data="verify")])
+        btns.append([InlineKeyboardButton("🚀 VERIFY JOINED", callback_data="𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘄 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱 ✅! 𝗪𝗲𝗹𝗰𝗼𝗺𝗲 𝗧𝗼 𝗞𝗮𝗮𝗹 𝗕𝗼𝗺𝗯𝗲𝗿.𝗣𝗿𝗲𝘀𝘀 /start 𝗧𝗼 𝗦𝘁𝗮𝗿𝘁")])
         
         await update.message.reply_text(
             "🛑 𝗣𝗹𝗲𝗮𝘀𝗲 𝗝𝗼𝗶𝗻 𝗔𝗹𝗹 𝗥𝗲𝗾𝘂𝗶𝗿𝗲𝗱 𝗖𝗵𝗮𝗻𝗻𝗲𝗹𝘀 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 ⚠️",
@@ -181,9 +181,9 @@ async def stats_cmd(update, context):
     username = user.username if user.username else user.first_name
     
     await update.message.reply_text(
-        f"🙌🏻 User = @{username}\n\n"
-        f"💰 Balance = {d.get('points',0)} Point\n\n"
-        f"🪢 Invite To Earn More*"
+        f"🙌🏻 𝗨𝘀𝗲𝗿 = @{username}\n\n"
+        f"💰 𝗕𝗮𝗹𝗮𝗻𝗰𝗲 = {d.get('points',0)} Point\n\n"
+        f"🪢 𝗜𝗻𝘃𝗶𝘁𝗲 𝗧𝗼 𝗘𝗮𝗿𝗻 𝗠𝗼𝗿𝗲*"
     )
 
 async def credits_cmd(update, context):
@@ -201,9 +201,9 @@ async def refer_cmd(update, context):
     link = f"https://t.me/{bot.username}?start=ref_{uid}"
     
     await update.message.reply_text(
-        f"🙌🏻 Total Refers = {d.get('referrals', 0)} User(s)\n\n"
-        f"🙌🏻 Your Invite Link = {link}\n\n"
-        f"🪢 Invite to Earn 1 Points Per Invite"
+        f"🙌🏻 𝗧𝗼𝘁𝗮𝗹 𝗥𝗲𝗳𝗲𝗿𝘀 = {d.get('referrals', 0)} User(s)\n\n"
+        f"🙌🏻 𝗬𝗼𝘂𝗿 𝗜𝗻𝘃𝗶𝘁𝗲 𝗟𝗶𝗻𝗸 = {link}\n\n"
+        f"🪢 𝗜𝗻𝘃𝗶𝘁𝗲 𝗧𝗼 𝗘𝗮𝗿𝗻 1 𝗣𝗼𝗶𝗻𝘁 𝗣𝗲𝗿 𝗜𝗻𝘃𝗶𝘁𝗲"
     )
 
 async def top_referrers(update, context):
@@ -227,11 +227,11 @@ async def on_callback(update: Update, context):
     q = update.callback_query
     user = q.from_user
     uid = user.id
-    await q.answer()
     
     update_user_info(user)
 
     if q.data == "verify":
+        await q.answer()
         if await is_joined_all(uid, context):
             await q.message.reply_text("✅ Verified!")
             await start(update, context)
@@ -240,9 +240,10 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "bomb":
+        await q.answer()
         d = get_user_doc(uid)
         if d.get("points", 0) < 1:
-            await q.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀𝘁 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝗺𝗯𝗲𝗿 💣")
+            await q.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝗺𝗯𝗲𝗿 💣")
             return
             
         user_state[uid] = "awaiting_number"
@@ -250,6 +251,7 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "refer":
+        await q.answer()
         d = get_user_doc(uid)
         bot = await context.bot.get_me()
         link = f"https://t.me/{bot.username}?start=ref_{uid}"
@@ -261,6 +263,7 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "stats":
+        await q.answer()
         d = get_user_doc(uid)
         username = user.username if user.username else user.first_name
         await q.message.reply_text(
@@ -276,16 +279,20 @@ async def on_callback(update: Update, context):
         now = datetime.utcnow()
         if last and (now - last) < timedelta(hours=24):
             rest = timedelta(hours=24) - (now - last)
-            await q.edit_message_text(
-                f"⛔ Come back after {rest.seconds//3600}h {(rest.seconds%3600)//60}m"
+            hours, remainder = divmod(rest.seconds, 3600)
+            minutes, _ = divmod(remainder, 60)
+            await q.answer(
+                f"⛔ Come back after {hours}h {minutes}m", 
+                show_alert=True
             )
             return
         if users:
             users.update_one({"user_id": uid}, {"$inc": {"points": 2}, "$set": {"last_bonus": now}})
-        await q.edit_message_text("🎁 𝗬𝗼𝘂 𝗥𝗲𝗰𝗶𝘃𝗲𝗱 2 𝗣𝗼𝗶𝗻𝘁𝘀!")
+        await q.answer("🎁 𝗬𝗼𝘂 𝗥𝗲𝗰𝗶𝘃𝗲𝗱 2 𝗣𝗼𝗶𝗻𝘁𝘀!", show_alert=True)
         return
 
     if q.data == "admin":
+        await q.answer()
         if uid not in ADMINS:
             await q.edit_message_text("❌ 𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘁 𝗔𝗱𝗺𝗶𝗻.")
             return
@@ -298,6 +305,7 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "buy_points":
+        await q.answer()
         await q.message.reply_text(
             "Minimum Point 100 Buy\nContact @Undefeatable_Vikash77\n\n"
             "100 point → 100₹\n"
@@ -306,6 +314,8 @@ async def on_callback(update: Update, context):
             "Only Serious Buyers, Not Timepassers."
         )
         return
+    
+    await q.answer()
 
 async def on_message(update, context):
     user = update.effective_user
@@ -325,7 +335,7 @@ async def on_message(update, context):
         d = get_user_doc(uid)
         if d.get("points", 0) < 1:
             user_state[uid] = None
-            await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀𝘁 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 💣")
+            await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 💣")
             return
 
         if users:
