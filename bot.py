@@ -233,7 +233,7 @@ async def on_callback(update: Update, context):
     if q.data == "verify":
         await q.answer()
         if await is_joined_all(uid, context):
-            await q.message.reply_text("✅ Verified!")
+            await q.message.reply_text("𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘄 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱 ✅! 𝗪𝗲𝗹𝗰𝗼𝗺𝗲 𝗧𝗼 𝗞𝗮𝗮𝗹 𝗕𝗼𝗺𝗯𝗲𝗿.𝗣𝗿𝗲𝘀𝘀 /start 𝗧𝗼 𝗦𝘁𝗮𝗿𝘁")
             await start(update, context)
         else:
             await q.message.reply_text("❌ You have not joined all channels yet.")
@@ -343,7 +343,7 @@ async def on_message(update, context):
 
         user_state[uid] = None
         
-        status_msg = await update.message.reply_text(f"💣 Bombing started on {msg}")
+        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}")
 
         for p in ("10%", "35%", "60%", "90%", "100%"):
             await asyncio.sleep(120)
