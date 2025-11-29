@@ -68,10 +68,23 @@ def get_user_doc(uid):
             "referrals": 0,
             "referred_by": None,
             "last_bonus": None,
-            "joined_at": datetime.utcnow()
+            "joined_at": datetime.utcnow(),
+            "username": None,
+            "first_name": None
         }
         users.insert_one(doc)
     return doc
+
+def update_user_info(user):
+    if users is None: return
+    try:
+        users.update_one(
+            {"user_id": user.id}, 
+            {"$set": {"username": user.username, "first_name": user.first_name}},
+            upsert=True
+        )
+    except:
+        pass
 
 async def is_joined_all(uid, context):
     for ch in REQUIRED_CHANNELS:
@@ -86,6 +99,8 @@ async def is_joined_all(uid, context):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     uid = user.id
+    
+    update_user_info(user)
 
     if context.args and users is not None:
         try:
@@ -107,7 +122,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         "referrals": 0,
                         "referred_by": ref_id,
                         "last_bonus": None,
-                        "joined_at": datetime.utcnow()
+                        "joined_at": datetime.utcnow(),
+                        "username": user.username,
+                        "first_name": user.first_name
                     })
         except Exception as e:
             logging.error(f"Referral Error: {e}")
@@ -119,14 +136,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         btns = []
         for i in range(0, len(REQUIRED_CHANNELS), 2):
             row = []
-            row.append(InlineKeyboardButton(f"JOIN {REQUIRED_CHANNELS[i]}", url=f"https://t.me/{REQUIRED_CHANNELS[i]}"))
+            row.append(InlineKeyboardButton("JOIN", url=f"https://t.me/{REQUIRED_CHANNELS[i]}"))
             if i + 1 < len(REQUIRED_CHANNELS):
-                row.append(InlineKeyboardButton(f"JOIN {REQUIRED_CHANNELS[i+1]}", url=f"https://t.me/{REQUIRED_CHANNELS[i+1]}"))
+                row.append(InlineKeyboardButton("JOIN", url=f"https://t.me/{REQUIRED_CHANNELS[i+1]}"))
             btns.append(row)
+        
         btns.append([InlineKeyboardButton("✅ VERIFY JOINED", callback_data="verify")])
         
         await update.message.reply_text(
-            "⚠️ 𝗣𝗹𝗲𝗮𝘀𝗲 𝗝𝗼𝗶𝗻 𝗔𝗹𝗹 𝗥𝗲𝗾𝘂𝗶𝗿𝗲𝗱 𝗖𝗵𝗮𝗻𝗻𝗲𝗹𝘀 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 ⚠️.",
+            "🛑 𝗣𝗹𝗲𝗮𝘀𝗲 𝗝𝗼𝗶𝗻 𝗔𝗹𝗹 𝗥𝗲𝗾𝘂𝗶𝗿𝗲𝗱 𝗖𝗵𝗮𝗻𝗻𝗲𝗹𝘀 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 ⚠️",
             reply_markup=InlineKeyboardMarkup(btns)
         )
         return
@@ -156,9 +174,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stats_cmd(update, context):
     if users is None: return
-    d = get_user_doc(update.effective_user.id)
+    user = update.effective_user
+    update_user_info(user)
+    
+    d = get_user_doc(user.id)
+    username = user.username if user.username else user.first_name
+    
     await update.message.reply_text(
-        f"Points: {d.get('points',0)}\nReferrals: {d.get('referrals',0)}\nReferred By: {d.get('referred_by')}"
+        f"🙌🏻 User = @{username}\n\n"
+        f"💰 Balance = {d.get('points',0)} Point\n\n"
+        f"🪢 Invite To Earn More*"
     )
 
 async def credits_cmd(update, context):
@@ -168,23 +193,43 @@ async def credits_cmd(update, context):
 
 async def refer_cmd(update, context):
     user = update.effective_user
+    uid = user.id
+    update_user_info(user)
+    
+    d = get_user_doc(uid)
     bot = await context.bot.get_me()
+    link = f"https://t.me/{bot.username}?start=ref_{uid}"
+    
     await update.message.reply_text(
-        f"Your referral link:\nhttps://t.me/{bot.username}?start=ref_{user.id}"
+        f"🙌🏻 Total Refers = {d.get('referrals', 0)} User(s)\n\n"
+        f"🙌🏻 Your Invite Link = {link}\n\n"
+        f"🪢 Invite to Earn 1 Points Per Invite"
     )
 
 async def top_referrers(update, context):
     if users is None: return
     top = users.find().sort("referrals", -1).limit(10)
-    msg = "🏆 Top Referrers:\n\n"
+    msg = "🏆 𝗧𝗼𝗽 𝗥𝗲𝗳𝗲𝗿𝗮𝗹𝘀:\n\n"
+    
     for i, u in enumerate(top):
-        msg += f"{i+1}. {u.get('user_id')} → {u.get('referrals',0)}\n"
+        if u.get('username'):
+            name = f"@{u['username']}"
+        elif u.get('first_name'):
+            name = u['first_name']
+        else:
+            name = f"ID:{u.get('user_id')}"
+            
+        msg += f"{i+1}. {name} → {u.get('referrals',0)}\n"
+        
     await update.message.reply_text(msg)
 
 async def on_callback(update: Update, context):
     q = update.callback_query
-    uid = q.from_user.id
+    user = q.from_user
+    uid = user.id
     await q.answer()
+    
+    update_user_info(user)
 
     if q.data == "verify":
         if await is_joined_all(uid, context):
@@ -195,20 +240,33 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "bomb":
+        d = get_user_doc(uid)
+        if d.get("points", 0) < 1:
+            await q.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀𝘁 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝗺𝗯𝗲𝗿 💣")
+            return
+            
         user_state[uid] = "awaiting_number"
-        await q.edit_message_text("Enter a 10-digit number:")
+        await q.edit_message_text("𝗘𝗻𝘁𝗲𝗿 𝗔 10 𝗗𝗶𝗴𝗶𝘁 𝗡𝘂𝗺𝗯𝗲𝗿:")
         return
 
     if q.data == "refer":
+        d = get_user_doc(uid)
         bot = await context.bot.get_me()
         link = f"https://t.me/{bot.username}?start=ref_{uid}"
-        await q.message.reply_text(f"Your referral link:\n{link}")
+        await q.message.reply_text(
+            f"🙌🏻 𝗧𝗼𝘁𝗮𝗹 𝗥𝗲𝗳𝗲𝗿𝘀 = {d.get('referrals', 0)} User(s)\n\n"
+            f"🙌🏻 𝗬𝗼𝘂𝗿 𝗜𝗻𝘃𝗶𝘁𝗲 𝗟𝗶𝗻𝗸 = {link}\n\n"
+            f"🪢 𝗜𝗻𝘃𝗶𝘁𝗲 𝗧𝗼 𝗘𝗮𝗿𝗻 1 𝗣𝗼𝗶𝗻𝘁 𝗣𝗲𝗿 𝗜𝗻𝘃𝗶𝘁𝗲"
+        )
         return
 
     if q.data == "stats":
         d = get_user_doc(uid)
+        username = user.username if user.username else user.first_name
         await q.message.reply_text(
-            f"Points: {d.get('points',0)}\nReferrals: {d.get('referrals',0)}\nReferred By: {d.get('referred_by')}"
+            f"🙌🏻 𝗨𝘀𝗲𝗿 = @{username}\n\n"
+            f"💰 𝗕𝗮𝗹𝗮𝗻𝗰𝗲 = {d.get('points',0)} Point\n\n"
+            f"🪢 𝗜𝗻𝘃𝗶𝘁𝗲 𝗧𝗼 𝗘𝗮𝗿𝗻 𝗠𝗼𝗿𝗲*"
         )
         return
 
@@ -224,12 +282,12 @@ async def on_callback(update: Update, context):
             return
         if users:
             users.update_one({"user_id": uid}, {"$inc": {"points": 2}, "$set": {"last_bonus": now}})
-        await q.edit_message_text("🎁 You received 2 points!")
+        await q.edit_message_text("🎁 𝗬𝗼𝘂 𝗥𝗲𝗰𝗶𝘃𝗲𝗱 2 𝗣𝗼𝗶𝗻𝘁𝘀!")
         return
 
     if q.data == "admin":
         if uid not in ADMINS:
-            await q.edit_message_text("❌ You are not admin.")
+            await q.edit_message_text("❌ 𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘁 𝗔𝗱𝗺𝗶𝗻.")
             return
         await q.edit_message_text(
             "🔧 Admin Commands:\n"
@@ -250,27 +308,41 @@ async def on_callback(update: Update, context):
         return
 
 async def on_message(update, context):
-    uid = update.effective_user.id
+    user = update.effective_user
+    uid = user.id
+    
+    update_user_info(user)
+
     if not update.message or not update.message.text:
         return
     msg = update.message.text.strip()
 
     if user_state.get(uid) == "awaiting_number":
         if not msg.isdigit() or len(msg) != 10:
-            await update.message.reply_text("❌ Enter a valid 10-digit number")
+            await update.message.reply_text("❌ 𝗘𝗻𝘁𝗲𝗿 𝗔 𝗩𝗮𝗹𝗶𝗱 10-𝗗𝗶𝗴𝗶𝘁 𝗡𝘂𝗺𝗯𝗲𝗿")
             return
+        
+        d = get_user_doc(uid)
+        if d.get("points", 0) < 1:
+            user_state[uid] = None
+            await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀𝘁 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 💣")
+            return
+
+        if users:
+            users.update_one({"user_id": uid}, {"$inc": {"points": -1}})
+
         user_state[uid] = None
         
         status_msg = await update.message.reply_text(f"💣 Bombing started on {msg}")
 
         for p in ("10%", "35%", "60%", "90%", "100%"):
-            await asyncio.sleep(2)
+            await asyncio.sleep(120)
             try:
-                await status_msg.edit_text(f"💣 Bombing started on {msg}\n💥 Progress: {p}")
+                await status_msg.edit_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}\n💥 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: {p}")
             except:
                 pass
 
-        await update.message.reply_text("🔥 Bombing Completed!")
+        await update.message.reply_text("🔥 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱!")
         return
 
 async def addcredits(update, context):
