@@ -52,28 +52,35 @@ if not MONGO_URI:
     db = None
     users = None
 else:
-    client = MongoClient(MONGO_URI)
-    db = client["telegram_bot"]
-    users = db["users"]
+    try:
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        db = client["telegram_bot"]
+        users = db["users"]
+    except:
+        client = None
+        users = None
 
 user_state = {}
 
 def get_user_doc(uid):
     if users is None: return {}
-    doc = users.find_one({"user_id": uid})
-    if doc is None:
-        doc = {
-            "user_id": uid,
-            "points": 0,
-            "referrals": 0,
-            "referred_by": None,
-            "last_bonus": None,
-            "joined_at": datetime.utcnow(),
-            "username": None,
-            "first_name": None
-        }
-        users.insert_one(doc)
-    return doc
+    try:
+        doc = users.find_one({"user_id": uid})
+        if doc is None:
+            doc = {
+                "user_id": uid,
+                "points": 0,
+                "referrals": 0,
+                "referred_by": None,
+                "last_bonus": None,
+                "joined_at": datetime.utcnow(),
+                "username": None,
+                "first_name": None
+            }
+            users.insert_one(doc)
+        return doc
+    except:
+        return {}
 
 def update_user_info(user):
     if users is None: return
@@ -228,7 +235,10 @@ async def on_callback(update: Update, context):
     user = q.from_user
     uid = user.id
     
-    update_user_info(user)
+    try:
+        update_user_info(user)
+    except:
+        pass
 
     if q.data == "verify":
         await q.answer()
@@ -274,21 +284,36 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "bonus":
-        d = get_user_doc(uid)
-        last = d.get("last_bonus")
-        now = datetime.utcnow()
-        if last and (now - last) < timedelta(hours=24):
-            rest = timedelta(hours=24) - (now - last)
-            hours, remainder = divmod(rest.seconds, 3600)
-            minutes, _ = divmod(remainder, 60)
-            await q.answer(
-                f"⛔ Come back after {hours}h {minutes}m", 
-                show_alert=True
-            )
+        if users is None:
+            await q.answer("❌ Database Error", show_alert=True)
             return
-        if users:
-            users.update_one({"user_id": uid}, {"$inc": {"points": 2}, "$set": {"last_bonus": now}})
-        await q.answer("🎁 𝗬𝗼𝘂 𝗥𝗲𝗰𝗶𝘃𝗲𝗱 2 𝗣𝗼𝗶𝗻𝘁𝘀!", show_alert=True)
+
+        try:
+            d = get_user_doc(uid)
+            last = d.get("last_bonus")
+            now = datetime.utcnow()
+
+            if last and hasattr(last, "tzinfo") and last.tzinfo:
+                last = last.replace(tzinfo=None)
+
+            if last and (now - last) < timedelta(hours=24):
+                rest = timedelta(hours=24) - (now - last)
+                hours, remainder = divmod(rest.seconds, 3600)
+                minutes, _ = divmod(remainder, 60)
+                await q.answer(
+                    f"⛔ Come back after {hours}h {minutes}m", 
+                    show_alert=True
+                )
+                return
+
+            users.update_one(
+                {"user_id": uid}, 
+                {"$inc": {"points": 2}, "$set": {"last_bonus": now}}
+            )
+            await q.answer("🎁 𝗬𝗼𝘂 𝗥𝗲𝗰𝗶𝘃𝗲𝗱 2 𝗣𝗼𝗶𝗻𝘁𝘀!", show_alert=True)
+        except Exception as e:
+            logging.error(f"Bonus Error: {e}")
+            await q.answer("❌ Error occurred", show_alert=True)
         return
 
     if q.data == "admin":
@@ -321,7 +346,10 @@ async def on_message(update, context):
     user = update.effective_user
     uid = user.id
     
-    update_user_info(user)
+    try:
+        update_user_info(user)
+    except:
+        pass
 
     if not update.message or not update.message.text:
         return
@@ -338,12 +366,15 @@ async def on_message(update, context):
             await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 💣")
             return
 
-        if users:
-            users.update_one({"user_id": uid}, {"$inc": {"points": -1}})
-
         user_state[uid] = None
         
-        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}")
+        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}\n💥 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: 0%")
+
+        if users:
+            try:
+                users.update_one({"user_id": uid}, {"$inc": {"points": -1}})
+            except:
+                pass
 
         for p in ("10%", "35%", "60%", "90%", "100%"):
             await asyncio.sleep(120)
@@ -354,6 +385,9 @@ async def on_message(update, context):
 
         await update.message.reply_text("🔥 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱!")
         return
+    
+    elif msg.isdigit() and len(msg) == 10:
+        await update.message.reply_text("⚠️ Please click '💣 Start Bombing' button first.")
 
 async def addcredits(update, context):
     if update.effective_user.id not in ADMINS or users is None: return
