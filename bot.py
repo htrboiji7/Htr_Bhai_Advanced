@@ -235,6 +235,7 @@ async def on_callback(update: Update, context):
     user = q.from_user
     uid = user.id
     
+    # Use answer() to stop the loading animation
     await q.answer()
     
     try:
@@ -282,23 +283,36 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "bonus":
-        d = get_user_doc(uid)
-        last = d.get("last_bonus")
+        if users is None:
+            await q.message.reply_text("Database Error!")
+            return
+
+        # Fetch latest data from DB to ensure accuracy
+        user_data = users.find_one({"user_id": uid})
+        if not user_data:
+            user_data = get_user_doc(uid)
+
+        last_bonus = user_data.get("last_bonus")
         now = datetime.utcnow()
         
-        if last and (now - last) < timedelta(hours=24):
-            rest = timedelta(hours=24) - (now - last)
-            hours, remainder = divmod(rest.seconds, 3600)
+        # Check if 24 hours have passed
+        if last_bonus and (now - last_bonus) < timedelta(hours=24):
+            time_left = timedelta(hours=24) - (now - last_bonus)
+            total_seconds = int(time_left.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             
             await q.edit_message_text(
                 f"⛔ You have already received a bonus in the last 24 hours!\n\n"
-                f"▶️ Please come back after ⏳ {hours} h {minutes} m {seconds} s"
+                f"▶️ Please come back after ⏳ {hours}h {minutes}m {seconds}s"
             )
             return
         
-        if users:
-            users.update_one({"user_id": uid}, {"$inc": {"points": 2}, "$set": {"last_bonus": now}})
+        # Grant Bonus
+        users.update_one(
+            {"user_id": uid}, 
+            {"$inc": {"points": 2}, "$set": {"last_bonus": now}}
+        )
         
         await q.edit_message_text(
             "🎁 Congrats! You received 2 Point\n\n"
