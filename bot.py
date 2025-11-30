@@ -235,13 +235,14 @@ async def on_callback(update: Update, context):
     user = q.from_user
     uid = user.id
     
+    await q.answer()
+    
     try:
         update_user_info(user)
     except:
         pass
 
     if q.data == "verify":
-        await q.answer()
         if await is_joined_all(uid, context):
             await q.message.reply_text("𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘄 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱 ✅! 𝗪𝗲𝗹𝗰𝗼𝗺𝗲 𝗧𝗼 𝗞𝗮𝗮𝗹 𝗕𝗼𝗺𝗯𝗲𝗿.𝗣𝗿𝗲𝘀𝘀 /start 𝗧𝗼 𝗦𝘁𝗮𝗿𝘁")
             await start(update, context)
@@ -250,7 +251,6 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "bomb":
-        await q.answer()
         d = get_user_doc(uid)
         if d.get("points", 0) < 1:
             await q.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝗺𝗯𝗲𝗿 💣")
@@ -261,7 +261,6 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "refer":
-        await q.answer()
         d = get_user_doc(uid)
         bot = await context.bot.get_me()
         link = f"https://t.me/{bot.username}?start=ref_{uid}"
@@ -273,7 +272,6 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "stats":
-        await q.answer()
         d = get_user_doc(uid)
         username = user.username if user.username else user.first_name
         await q.message.reply_text(
@@ -284,40 +282,31 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "bonus":
-        if users is None:
-            await q.answer("❌ Database Error", show_alert=True)
-            return
-
-        try:
-            d = get_user_doc(uid)
-            last = d.get("last_bonus")
-            now = datetime.utcnow()
-
-            if last and hasattr(last, "tzinfo") and last.tzinfo:
-                last = last.replace(tzinfo=None)
-
-            if last and (now - last) < timedelta(hours=24):
-                rest = timedelta(hours=24) - (now - last)
-                hours, remainder = divmod(rest.seconds, 3600)
-                minutes, _ = divmod(remainder, 60)
-                await q.answer(
-                    f"⛔ Come back after {hours}h {minutes}m", 
-                    show_alert=True
-                )
-                return
-
-            users.update_one(
-                {"user_id": uid}, 
-                {"$inc": {"points": 2}, "$set": {"last_bonus": now}}
+        d = get_user_doc(uid)
+        last = d.get("last_bonus")
+        now = datetime.utcnow()
+        
+        if last and (now - last) < timedelta(hours=24):
+            rest = timedelta(hours=24) - (now - last)
+            hours, remainder = divmod(rest.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            
+            await q.edit_message_text(
+                f"⛔ You have already received a bonus in the last 24 hours!\n\n"
+                f"▶️ Please come back after ⏳ {hours} h {minutes} m {seconds} s"
             )
-            await q.answer("🎁 𝗬𝗼𝘂 𝗥𝗲𝗰𝗶𝘃𝗲𝗱 2 𝗣𝗼𝗶𝗻𝘁𝘀!", show_alert=True)
-        except Exception as e:
-            logging.error(f"Bonus Error: {e}")
-            await q.answer("❌ Error occurred", show_alert=True)
+            return
+        
+        if users:
+            users.update_one({"user_id": uid}, {"$inc": {"points": 2}, "$set": {"last_bonus": now}})
+        
+        await q.edit_message_text(
+            "🎁 Congrats! You received 2 Point\n\n"
+            "🔍 Check back after 24 hours!"
+        )
         return
 
     if q.data == "admin":
-        await q.answer()
         if uid not in ADMINS:
             await q.edit_message_text("❌ 𝗬𝗼𝘂 𝗔𝗿𝗲 𝗡𝗼𝘁 𝗔𝗱𝗺𝗶𝗻.")
             return
@@ -330,7 +319,6 @@ async def on_callback(update: Update, context):
         return
 
     if q.data == "buy_points":
-        await q.answer()
         await q.message.reply_text(
             "Minimum Point 100 Buy\nContact @Undefeatable_Vikash77\n\n"
             "100 point → 100₹\n"
@@ -339,8 +327,6 @@ async def on_callback(update: Update, context):
             "Only Serious Buyers, Not Timepassers."
         )
         return
-    
-    await q.answer()
 
 async def on_message(update, context):
     user = update.effective_user
@@ -366,15 +352,15 @@ async def on_message(update, context):
             await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 💣")
             return
 
-        user_state[uid] = None
-        
-        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}\n💥 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: 0%")
-
         if users:
             try:
                 users.update_one({"user_id": uid}, {"$inc": {"points": -1}})
             except:
                 pass
+
+        user_state[uid] = None
+        
+        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}\n💥 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: 0%")
 
         for p in ("10%", "35%", "60%", "90%", "100%"):
             await asyncio.sleep(120)
