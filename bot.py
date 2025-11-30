@@ -215,8 +215,9 @@ async def refer_cmd(update, context):
 
 async def top_referrers(update, context):
     if users is None: return
-    top = users.find().sort("referrals", -1).limit(10)
-    msg = "🏆 𝗧𝗼𝗽 𝗥𝗲𝗳𝗲𝗿𝗮𝗹𝘀:\n\n"
+    # CHANGED: Sorting by 'points' instead of 'referrals'
+    top = users.find().sort("points", -1).limit(10)
+    msg = "🏆 𝗧𝗼𝗽 𝗨𝘀𝗲𝗿𝘀 (𝗕𝘆 𝗣𝗼𝗶𝗻𝘁𝘀):\n\n"
     
     for i, u in enumerate(top):
         if u.get('username'):
@@ -226,7 +227,8 @@ async def top_referrers(update, context):
         else:
             name = f"ID:{u.get('user_id')}"
             
-        msg += f"{i+1}. {name} → {u.get('referrals',0)}\n"
+        # CHANGED: Displaying points
+        msg += f"{i+1}. {name} → {u.get('points',0)} Pts\n"
         
     await update.message.reply_text(msg)
 
@@ -235,7 +237,6 @@ async def on_callback(update: Update, context):
     user = q.from_user
     uid = user.id
     
-    # Use answer() to stop the loading animation
     await q.answer()
     
     try:
@@ -258,7 +259,7 @@ async def on_callback(update: Update, context):
             return
             
         user_state[uid] = "awaiting_number"
-        await q.edit_message_text("𝗘𝗻𝘁𝗲𝗿 𝗔 10 𝗗𝗶𝗴𝗶𝘁 𝗡𝘂𝗺𝗯𝗲𝗿:")
+        await q.edit_message_text("𝗘𝗻𝘁𝗲𝗿 𝗮 10 𝗗𝗶𝗴𝗶𝘁 𝗡𝘂𝗺𝗯𝗲𝗿 ➡️:")
         return
 
     if q.data == "refer":
@@ -284,18 +285,21 @@ async def on_callback(update: Update, context):
 
     if q.data == "bonus":
         if users is None:
-            await q.message.reply_text("Database Error!")
+            await q.edit_message_text("⚠️ Database Error! Please check connection settings.")
             return
 
-        # Fetch latest data from DB to ensure accuracy
-        user_data = users.find_one({"user_id": uid})
+        try:
+            user_data = users.find_one({"user_id": uid})
+        except:
+            await q.edit_message_text("⚠️ Connection Failed!")
+            return
+
         if not user_data:
             user_data = get_user_doc(uid)
 
         last_bonus = user_data.get("last_bonus")
         now = datetime.utcnow()
         
-        # Check if 24 hours have passed
         if last_bonus and (now - last_bonus) < timedelta(hours=24):
             time_left = timedelta(hours=24) - (now - last_bonus)
             total_seconds = int(time_left.total_seconds())
@@ -304,11 +308,10 @@ async def on_callback(update: Update, context):
             
             await q.edit_message_text(
                 f"⛔ You have already received a bonus in the last 24 hours!\n\n"
-                f"▶️ Please come back after ⏳ {hours}h {minutes}m {seconds}s"
+                f"▶️ Please come back after ⏳ {hours} h {minutes} m {seconds} s"
             )
             return
         
-        # Grant Bonus
         users.update_one(
             {"user_id": uid}, 
             {"$inc": {"points": 2}, "$set": {"last_bonus": now}}
@@ -363,19 +366,22 @@ async def on_message(update, context):
         d = get_user_doc(uid)
         if d.get("points", 0) < 1:
             user_state[uid] = None
-            await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 💣")
+            await update.message.reply_text("⚠️ 𝗬𝗼𝘂 𝗠𝘂𝘀𝘁 𝗛𝗮𝘃𝗲 𝗔𝘁𝗹𝗲𝗮𝘀ᴛ 1 𝗣𝗼𝗶𝗻𝘁 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝗺𝗯𝗲𝗿 💣")
             return
 
+        user_state[uid] = None
+        
+        # 1. Send Message FIRST (Fast Response)
+        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}\n💥 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: 0%")
+
+        # 2. Deduct points in background
         if users:
             try:
                 users.update_one({"user_id": uid}, {"$inc": {"points": -1}})
             except:
                 pass
 
-        user_state[uid] = None
-        
-        status_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻 {msg}\n💥 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: 0%")
-
+        # 3. Start Loop
         for p in ("10%", "35%", "60%", "90%", "100%"):
             await asyncio.sleep(120)
             try:
