@@ -577,5 +577,41 @@ async def active_bombs_cmd(update, context):
     if update.effective_user.id not in ADMINS:
         return
     
-    if not active_bombings:
-        await update.message.reply_text("No acti
+if not active_bombings:
+        await update.message.reply_text("No active bombings at the moment.")
+        return
+    
+    msg = "🚀 𝗔𝗰𝘁𝗶𝘃𝗲 𝗕𝗼𝗺𝗯𝗶𝗻𝗴𝘀:\n\n"
+    for uid, data in active_bombings.items():
+        time_elapsed = (datetime.now() - data["start_time"]).total_seconds() // 60
+        msg += f"👤 𝗨𝘀𝗲𝗿 𝗜𝗗: {uid}\n"
+        msg += f"📱 𝗧𝗮𝗿𝗴𝗲𝘁: {data['phone_number']}\n"
+        msg += f"⏱️ 𝗧𝗶𝗺𝗲 𝗘𝗹𝗮𝗽𝘀𝗲𝗱: {int(time_elapsed)} minutes\n\n"
+    
+    await update.message.reply_text(msg)
+
+if __name__ == "__main__":
+    if not BOT_TOKEN:
+        print("Error: BOT_TOKEN is missing.")
+
+    keep_alive()
+
+    if BOT_TOKEN:
+        bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+        bot_app.add_handler(CommandHandler("start", start))
+        bot_app.add_handler(CommandHandler("stats", stats_cmd))
+        bot_app.add_handler(CommandHandler("credits", credits_cmd))
+        bot_app.add_handler(CommandHandler("refer", refer_cmd))
+        bot_app.add_handler(CommandHandler("top", top_referrers))
+        bot_app.add_handler(CommandHandler("addcredits", addcredits))
+        bot_app.add_handler(CommandHandler("setpoints", setpoints))
+        bot_app.add_handler(CommandHandler("broadcast", broadcast))
+        bot_app.add_handler(CommandHandler("checkdb", check_mongo))
+        bot_app.add_handler(CommandHandler("activebombs", active_bombs_cmd))
+
+        bot_app.add_handler(CallbackQueryHandler(on_callback))
+        bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
+
+        print("Bot is starting...")
+        bot_app.run_polling(drop_pending_updates=True)
