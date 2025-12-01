@@ -61,6 +61,7 @@ else:
 
 user_state = {}
 memory_users = {}
+active_bombings = {}
 
 def get_user_doc(uid):
     try:
@@ -175,7 +176,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     row.append(InlineKeyboardButton("𝗝𝗢𝗜𝗡", url=f"https://t.me/{REQUIRED_CHANNELS[i+1]}"))
                 btns.append(row)
             
-            btns.append([InlineKeyboardButton("🚀 VERIFY JOINED", callback_data="verify")])
+            btns.append([InlineKeyboardButton("🚀 𝗩𝗘𝗥𝗜𝗙𝗬 𝗝𝗢𝗜𝗡𝗘𝗗", callback_data="verify")])
             
             await update.message.reply_text(
                 "🛑 𝗣𝗹𝗲𝗮𝘀𝗲 𝗝𝗼𝗶𝗻 𝗔𝗹𝗹 𝗥𝗲𝗾𝘂𝗶𝗿𝗲𝗱 𝗖𝗵𝗮𝗻𝗻𝗲𝗹𝘀 𝗧𝗼 𝗨𝘀𝗲 𝗧𝗵𝗶𝘀 𝗕𝗼𝘁 ⚠️",
@@ -293,7 +294,7 @@ async def on_callback(update: Update, context):
             return
             
         user_state[uid] = "awaiting_number"
-        await q.edit_message_text("𝗘𝗻𝘁𝗲𝗿 𝗔 10 𝗗𝗶𝗴𝗶𝘁 𝗡𝘂𝗺𝗯𝗲𝗿:")
+        await q.edit_message_text("𝗘𝗻𝘁𝗲𝗿 𝗔 10 𝗗𝗶𝗴𝗶𝘁 𝗡𝘂𝗺𝗯𝗲𝗿 ➡️:")
         return
 
     if q.data == "refer":
@@ -366,19 +367,66 @@ async def on_callback(update: Update, context):
             "/addcredits <uid> <points>\n"
             "/setpoints <uid> <points>\n"
             "/broadcast <message>\n"
-            "/checkdb"
+            "/checkdb\n"
+            "/activebombs"
         )
         return
 
     if q.data == "buy_points":
         await q.message.reply_text(
-            "Minimum Point 100 Buy\nContact @Undefeatable_Vikash77\n\n"
-            "100 point → 100₹\n"
-            "250 point → 200₹\n"
-            "500 point → 400₹\n\n"
-            "Only Serious Buyers, Not Timepassers."
+            "𝗠𝗶𝗻𝗶𝗺𝘂𝗺 𝗣𝗼𝗶𝗻𝘁𝘀 100 𝗕𝘂𝘆 ⬇️\nContact @Undefeatable_Vikash77\n\n"
+            "100 𝗣𝗼𝗶𝗻𝘁𝘀 → 100₹\n"
+            "250 𝗣𝗼𝗶𝗻𝘁𝘀 → 200₹\n"
+            "500 𝗣𝗼𝗶𝗻𝘁𝘀 → 400₹\n\n"
+            "𝗢𝗻𝗹𝘆 𝗦𝗲𝗿𝗶𝗼𝘂𝘀 𝗕𝘂𝘆𝗲𝗿𝘀,𝗡𝗼𝘁 𝗧𝗶𝗺𝗲𝗽𝗮𝘀𝘀𝗲𝗿𝘀 🔱."
         )
         return
+
+async def bomb_number(phone_number, user_id, chat_id, context, remaining_points):
+    try:
+        total_time = 1800
+        start_time = datetime.now()
+        
+        for i in range(30):
+            elapsed_minutes = i + 1
+            remaining_minutes = 30 - elapsed_minutes
+            progress_percentage = int((elapsed_minutes / 30) * 100)
+            
+            if elapsed_minutes % 5 == 0 or elapsed_minutes == 1:
+                progress_bar = "▓" * (elapsed_minutes // 2) + "░" * ((30 - elapsed_minutes) // 2)
+                
+                report_msg = (
+                    f"🚀 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗜𝗻 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀\n\n"
+                    f"📱 𝗧𝗮𝗿𝗴𝗲𝘁: {phone_number}\n"
+                    f"⏱️ 𝗧𝗶𝗺𝗲 𝗘𝗹𝗮𝗽𝘀𝗲𝗱: {elapsed_minutes} min\n"
+                    f"⏳ 𝗧𝗶𝗺𝗲 𝗥𝗲𝗺𝗮𝗶𝗻𝗶𝗻𝗴: {remaining_minutes} min\n"
+                    f"📊 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀: {progress_bar} {progress_percentage}%\n"
+                    f"🔥 𝗕𝗼𝗺𝗯𝘀 𝗦𝗲𝗻𝗱: {elapsed_minutes * 100}\n"
+                    f"💾 𝗦𝘁𝗮𝘁𝘂𝘀: Active"
+                )
+                
+                await context.bot.send_message(chat_id, report_msg)
+            
+            await asyncio.sleep(60)
+        
+        final_msg = (
+            f"✅ 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱!\n\n"
+            f"📱 𝗧𝗮𝗿𝗴𝗲𝘁: {phone_number}\n"
+            f"⏱️ 𝗧𝗼𝘁𝗮𝗹 𝗧𝗶𝗺𝗲: 30 minutes\n"
+            f"💣 𝗧𝗼𝘁𝗮𝗹 𝗕𝗼𝗺𝗯𝘀 𝗦𝗲𝗻𝗱: 3000\n"
+            f"🔥 𝗦𝘁𝗮𝘁𝘂𝘀: Successfully Completed\n\n"
+            f"💰 𝗥𝗲𝗺𝗮𝗻𝗶𝗻𝗴 𝗣𝗼𝗶𝗻𝘁𝘀: {remaining_points-1}"
+        )
+        
+        await context.bot.send_message(chat_id, final_msg)
+        
+        if user_id in active_bombings:
+            del active_bombings[user_id]
+            
+    except Exception as e:
+        logging.error(f"Error in bombing task: {e}")
+        if user_id in active_bombings:
+            del active_bombings[user_id]
 
 async def on_message(update, context):
     user = update.effective_user
@@ -419,28 +467,35 @@ async def on_message(update, context):
         user_state[uid] = None
         
         try:
-            progress_msg = await update.message.reply_text(f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻: {msg}")
-            
-            for i in range(5):
-                await asyncio.sleep(1)
-                try:
-                    await progress_msg.edit_text(
-                        f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻: {msg}\n"
-                        f"Progress: [{'▓'*(i+1)}{'░'*(4-i)}] {(i+1)*20}%"
-                    )
-                except:
-                    pass
+            active_bombings[uid] = {
+                "phone_number": msg,
+                "start_time": datetime.now(),
+                "chat_id": update.message.chat_id
+            }
             
             await update.message.reply_text(
-                f"✅ 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱!\n"
-                f"Target: {msg}\n"
-                f"Status: Successful ✅\n\n"
-                f"Remaining Points: {d.get('points',0)-1}"
+                f"💣 𝗕𝗼𝗺𝗯𝗶𝗻𝗴 𝗦𝘁𝗮𝗿𝘁𝗲𝗱 𝗢𝗻: {msg}\n\n"
+                f"⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: 30 minutes\n"
+                f"📊 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀 𝗥𝗲𝗽𝗼𝗿𝘁 𝗪𝗶𝗹𝗹 𝗦𝗲𝗻𝗱 𝗜𝗻 𝗘𝘃𝗲𝗿𝘆 5 𝗠𝗶𝗻𝘀\n"
+                f"🔥 𝗘𝘀𝘁𝗶𝗺𝗮𝘁𝗲𝗱 𝗕𝗼𝗺𝗯𝘀: 3000\n\n"
+                f"⏳ 𝗣𝗹𝗲𝗮𝘀𝗲 𝗪𝗮𝗶𝘁 𝗙𝗼𝗿 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗶𝗼𝗻..."
+            )
+            
+            asyncio.create_task(
+                bomb_number(
+                    msg, 
+                    uid, 
+                    update.message.chat_id, 
+                    context, 
+                    d.get("points", 0)
+                )
             )
             
         except Exception as e:
-            logging.error(f"Error in bombing simulation: {e}")
-            await update.message.reply_text("✅ Bombing completed!")
+            logging.error(f"Error starting bombing: {e}")
+            await update.message.reply_text("❌ Error starting bombing process.")
+            if uid in active_bombings:
+                del active_bombings[uid]
         return
     
     elif msg.isdigit() and len(msg) == 10:
@@ -518,27 +573,9 @@ async def check_mongo(update, context):
     else:
         await update.message.reply_text("❌ MongoDB not connected. Running in memory mode.")
 
-if __name__ == "__main__":
-    if not BOT_TOKEN:
-        print("Error: BOT_TOKEN is missing.")
-
-    keep_alive()
-
-    if BOT_TOKEN:
-        bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
-
-        bot_app.add_handler(CommandHandler("start", start))
-        bot_app.add_handler(CommandHandler("stats", stats_cmd))
-        bot_app.add_handler(CommandHandler("credits", credits_cmd))
-        bot_app.add_handler(CommandHandler("refer", refer_cmd))
-        bot_app.add_handler(CommandHandler("top", top_referrers))
-        bot_app.add_handler(CommandHandler("addcredits", addcredits))
-        bot_app.add_handler(CommandHandler("setpoints", setpoints))
-        bot_app.add_handler(CommandHandler("broadcast", broadcast))
-        bot_app.add_handler(CommandHandler("checkdb", check_mongo))
-
-        bot_app.add_handler(CallbackQueryHandler(on_callback))
-        bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
-
-        print("Bot is starting...")
-        bot_app.run_polling(drop_pending_updates=True)
+async def active_bombs_cmd(update, context):
+    if update.effective_user.id not in ADMINS:
+        return
+    
+    if not active_bombings:
+        await update.message.reply_text("No acti
