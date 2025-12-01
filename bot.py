@@ -577,7 +577,7 @@ async def active_bombs_cmd(update, context):
     if update.effective_user.id not in ADMINS:
         return
     
-if not active_bombings:
+    if not active_bombings:
         await update.message.reply_text("No active bombings at the moment.")
         return
     
